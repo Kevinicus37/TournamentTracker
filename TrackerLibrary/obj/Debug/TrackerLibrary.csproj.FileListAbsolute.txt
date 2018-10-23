@@ -1,0 +1,8 @@
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\bin\Debug\TrackerLibrary.dll
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\bin\Debug\TrackerLibrary.pdb
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\obj\Debug\TrackerLibrary.csprojResolveAssemblyReference.cache
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\obj\Debug\TrackerLibrary.csproj.CoreCompileInputs.cache
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\obj\Debug\TrackerLibrary.dll
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\obj\Debug\TrackerLibrary.pdb
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\bin\Debug\Dapper.dll
+C:\Users\dogma\OneDrive\Documents\Visual Studio 2017\Projects\TournamentTracker\TrackerLibrary\bin\Debug\Dapper.xml
