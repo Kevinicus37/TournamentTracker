@@ -48,6 +48,7 @@ namespace TrackerLibrary
                         currMatchup = new MatchupModel();
                     }
                 }
+                tmt.Rounds.Add(currRound);
                 previousRound = currRound;
                 currRound = new List<MatchupModel>();
                 round++;
