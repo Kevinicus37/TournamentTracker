@@ -22,6 +22,7 @@ namespace TrackerUI
         public CreateTournamentForm()
         {
             InitializeComponent();
+            
             WireUpLists();
         }
 
@@ -139,6 +140,9 @@ namespace TrackerUI
             // Create all of the Teams entries
             GlobalConfig.Connection.CreateTournament(tmt);
 
+            TournamentViewerForm frm = new TournamentViewerForm(tmt);
+            frm.Show();
+            this.Close();
             
         }
     }

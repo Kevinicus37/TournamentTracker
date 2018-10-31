@@ -118,10 +118,7 @@ namespace TrackerLibrary.DataAccess
 
         public void CreateTournament(TournamentModel model)
         {
-            List<TournamentModel> tournaments = TournamentsFile
-                .FullFilePath()
-                .LoadFile()
-                .ConvertToTournamentModels(TeamsFile, PeopleFile, PrizesFile);
+            List<TournamentModel> tournaments = GetTournaments_All();
 
             int currentId = 1;
 
@@ -137,6 +134,11 @@ namespace TrackerLibrary.DataAccess
             tournaments.Add(model);
 
             tournaments.SaveToTournamentsFile(TournamentsFile);
+        }
+
+        public List<TournamentModel> GetTournaments_All()
+        {
+            return TournamentsFile.FullFilePath().LoadFile().ConvertToTournamentModels(TeamsFile, PeopleFile, PrizesFile);
         }
     }
 }
