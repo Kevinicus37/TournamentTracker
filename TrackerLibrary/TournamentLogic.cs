@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +10,6 @@ namespace TrackerLibrary
 {
     public static class TournamentLogic
     {
-        
         public static void CreateTournamentRounds(TournamentModel tmt)
         {
             // Randomize order of Teams
@@ -22,8 +22,102 @@ namespace TrackerLibrary
             int byes = FindNumberOfByes(randomizedTeams.Count, rounds);
 
             tmt.Rounds.Add(CreateFirstRound(byes, randomizedTeams));
-
             CreateRemainingRounds(rounds, tmt);
+            UpdateTournamentResults(tmt);
+        }
+
+        public static void UpdateTournamentResults(TournamentModel tmt)
+        {
+            List<MatchupModel> toScore = new List<MatchupModel>();
+
+            foreach (List<MatchupModel> round in tmt.Rounds)
+            {
+                foreach (MatchupModel matchup in round)
+                {
+                    if (matchup.Winner == null && (matchup.Entries.Any(x => x.Score != 0) || matchup.Entries.Count == 1))
+                    {
+                        toScore.Add(matchup);
+                    }
+                }
+            }
+
+            MarkMatchupWinners(toScore);
+            AdvanceWinners(toScore, tmt);
+            toScore.ForEach(x => GlobalConfig.Connection.UpdateMatchupModel(x));
+        }
+
+        private static void MarkMatchupWinners(List<MatchupModel> matchups)
+        {
+            // 1 (default) or 0
+            string greaterWins = ConfigurationManager.AppSettings["greaterWins"];
+
+            foreach (MatchupModel m in matchups)
+            {
+                if (m.Entries.Count == 1)
+                {
+                    m.Winner = m.Entries[0].TeamCompeting;
+                    continue;
+                }
+
+                // 0 = lower score wins
+                if (greaterWins == "0")
+                {
+                    if (m.Entries[0].Score < m.Entries[1].Score)
+                    {
+                        m.Winner = m.Entries[0].TeamCompeting;
+                    }
+                    else if (m.Entries[1].Score < m.Entries[0].Score)
+                    {
+                        m.Winner = m.Entries[1].TeamCompeting;
+                    }
+                    else
+                    {
+                        throw new Exception("You have a tie - play again!");
+                    }
+                }
+                else
+                {
+                    // 1 or high score wins
+                    if (m.Entries[0].Score > m.Entries[1].Score)
+                    {
+                        m.Winner = m.Entries[0].TeamCompeting;
+                    }
+                    else if (m.Entries[1].Score > m.Entries[0].Score)
+                    {
+                        m.Winner = m.Entries[1].TeamCompeting;
+                    }
+                    else
+                    {
+                        throw new Exception("You have a tie - play again!");
+                    }
+                }
+            }
+        }
+
+        private static void AdvanceWinners(List<MatchupModel> matchups, TournamentModel tmt)
+        {
+            List<MatchupModel> nextRoundMatchups = new List<MatchupModel>();
+
+            foreach (MatchupModel m in matchups)
+            {
+                if (m.MatchupRound < tmt.Rounds.Count)
+                {
+                    nextRoundMatchups = tmt.Rounds[m.MatchupRound];
+                }
+
+                foreach (MatchupModel mm in nextRoundMatchups)
+                {
+                    foreach (MatchupEntryModel me in mm.Entries)
+                    {
+                        if (me.ParentMatchup == m)
+                        {
+                            me.TeamCompeting = m.Winner;
+                            GlobalConfig.Connection.UpdateMatchupEntryModel(me);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         private static void CreateRemainingRounds(int rounds, TournamentModel tmt)

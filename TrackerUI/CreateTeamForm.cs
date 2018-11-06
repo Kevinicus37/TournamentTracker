@@ -16,9 +16,7 @@ namespace TrackerUI
     public partial class CreateTeamForm : Form
     {
         private List<PersonModel> availableTeamMembers = GlobalConfig.Connection.GetPerson_All();
-
         private List<PersonModel> selectedTeamMembers = new List<PersonModel>();
-
         private ITeamRequester callingForm;
 
         public CreateTeamForm(ITeamRequester caller)
@@ -85,7 +83,7 @@ namespace TrackerUI
                 };
 
                 // Add new Person to db or text file
-                p = GlobalConfig.Connection.CreatePerson(p);
+                GlobalConfig.Connection.CreatePerson(p);
 
                 // Add new member to current team 
                 selectedTeamMembers.Add(p);
@@ -180,7 +178,7 @@ namespace TrackerUI
                 t.TeamName = teamNameValue.Text;
                 t.TeamMembers = selectedTeamMembers;
 
-                t = GlobalConfig.Connection.CreateTeam(t);
+                GlobalConfig.Connection.CreateTeam(t);
 
                 callingForm.TeamComplete(t);
 

@@ -61,8 +61,6 @@ namespace TrackerUI
             // Call the CreatePrizeForm
             CreatePrizeForm frm = new CreatePrizeForm(this);
             frm.Show();
-
-            
         }
 
         public void PrizeComplete(PrizeModel model)
@@ -105,7 +103,6 @@ namespace TrackerUI
                 selectedTeams.Remove(t);
                 availableTeams.Add(t);
                 WireUpLists();
-
             }
         }
 
@@ -125,7 +122,6 @@ namespace TrackerUI
             }
 
             // Create Tournament Model
-
             TournamentModel tmt = new TournamentModel();
             tmt.TournamentName = tournamentNameValue.Text;
             tmt.EntryFee = fee;
@@ -143,7 +139,6 @@ namespace TrackerUI
             TournamentViewerForm frm = new TournamentViewerForm(tmt);
             frm.Show();
             this.Close();
-            
         }
     }
 }
