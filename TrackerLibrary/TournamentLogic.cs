@@ -23,11 +23,13 @@ namespace TrackerLibrary
 
             tmt.Rounds.Add(CreateFirstRound(byes, randomizedTeams));
             CreateRemainingRounds(rounds, tmt);
+            
             UpdateTournamentResults(tmt);
         }
 
         public static void UpdateTournamentResults(TournamentModel tmt)
         {
+            int startingRound = tmt.CheckCurrentRound();
             List<MatchupModel> toScore = new List<MatchupModel>();
 
             foreach (List<MatchupModel> round in tmt.Rounds)
@@ -44,6 +46,82 @@ namespace TrackerLibrary
             MarkMatchupWinners(toScore);
             AdvanceWinners(toScore, tmt);
             toScore.ForEach(x => GlobalConfig.Connection.UpdateMatchupModel(x));
+
+            int endingRound = tmt.CheckCurrentRound();
+            if (endingRound > startingRound && endingRound <= tmt.Rounds.Count)
+            {
+                // Alert users
+                tmt.AlertUsersToNewRound();
+            }
+        }
+
+        public static void AlertUsersToNewRound(this TournamentModel tmt)
+        {
+            int currentRoundNumber = tmt.CheckCurrentRound();
+            List<MatchupModel> currentRound = tmt.Rounds.Where(x => x.First().MatchupRound == currentRoundNumber).First();
+            
+            List<string> to = new List<string>();
+
+            foreach (MatchupModel m in currentRound)
+            {
+                foreach (MatchupEntryModel me in m.Entries)
+                {
+                    MatchupEntryModel competitor = m.Entries.Where(x => x.TeamCompeting != me.TeamCompeting).FirstOrDefault();
+
+                    foreach (PersonModel p in me.TeamCompeting.TeamMembers)
+                    {
+                        AlertPersonToNewRound(p, me.TeamCompeting.TeamName, competitor.TeamCompeting.TeamName);
+                    }
+                }
+            }
+        }
+
+        private static void AlertPersonToNewRound(PersonModel p, string teamName, string competitorName)
+        {
+            if (p.EmailAddress.Length == 0)
+            {
+                return;
+            }
+
+            string to = p.EmailAddress;
+            string subject = "";
+            StringBuilder body = new StringBuilder();
+        
+            if (competitorName.Length > 0)
+            {
+                subject = $"You have a new matchup with {competitorName}";
+                body.AppendLine("<h1>You have a new matchup!</h1>");
+                body.Append("<strong>Competitor: </strong>");
+                body.Append(competitorName);
+                body.AppendLine();
+                body.AppendLine();
+                body.AppendLine("Have a great time!");
+                body.AppendLine("~Tournament Tracker");
+            }
+            else
+            {
+                subject = "You have a bye this round.";
+
+                body.AppendLine("Enjoy your round off.");
+                body.AppendLine("~Tournament Tracker");
+            }
+
+            EmailLogic.SendEmail(to, subject, body.ToString());
+        }
+
+        private static int CheckCurrentRound(this TournamentModel tmt)
+        {
+            int output = 1;
+
+            foreach (List<MatchupModel> round in tmt.Rounds)
+            {
+                if (round.All(x => x.Winner != null))
+                {
+                    output++;
+                }
+            }
+
+            return output;
         }
 
         private static void MarkMatchupWinners(List<MatchupModel> matchups)
@@ -129,8 +207,6 @@ namespace TrackerLibrary
 
             while (round <= rounds)
             {
-
-
                 foreach (MatchupModel match in previousRound)
                 {
                     currMatchup.Entries.Add(new MatchupEntryModel { ParentMatchup = match });

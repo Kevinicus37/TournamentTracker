@@ -39,7 +39,6 @@ namespace TrackerUI
         {
             TournamentViewerForm frm = new TournamentViewerForm((TournamentModel) selectTournamentDropDown.SelectedItem);
             frm.Show();
-            
         }
 
         
