@@ -20,6 +20,7 @@ namespace TrackerUI
         {
             InitializeComponent();
             WireUpList();
+            
         }
 
         private void WireUpList()

@@ -43,6 +43,7 @@ namespace TrackerLibrary
                 }
             }
 
+            // TODO - Why are entries not updating properly?
             MarkMatchupWinners(toScore);
             AdvanceWinners(toScore, tmt);
             toScore.ForEach(x => GlobalConfig.Connection.UpdateMatchupModel(x));
@@ -68,9 +69,16 @@ namespace TrackerLibrary
                 {
                     MatchupEntryModel competitor = m.Entries.Where(x => x.TeamCompeting != me.TeamCompeting).FirstOrDefault();
 
+                    string competitorName = "";
+
+                    if (competitor != null)
+                    {
+                        competitorName = competitor.TeamCompeting.TeamName;
+                    }
+
                     foreach (PersonModel p in me.TeamCompeting.TeamMembers)
                     {
-                        AlertPersonToNewRound(p, me.TeamCompeting.TeamName, competitor.TeamCompeting.TeamName);
+                        AlertPersonToNewRound(p, me.TeamCompeting.TeamName, competitorName);
                     }
                 }
             }
@@ -115,15 +123,121 @@ namespace TrackerLibrary
 
             foreach (List<MatchupModel> round in tmt.Rounds)
             {
+                // This is not consistent with Tim's comments on assuming.  
+                // This method only works properly if you assume the rounds
+                // are in ascending order.  
                 if (round.All(x => x.Winner != null))
                 {
                     output++;
                 }
+                else
+                {
+                    return output;
+                }
             }
+            
+            // If output is never returned because all tournament winners 
+            // are determined, then Tournament is Complete
+            CompleteTournament(tmt);
 
-            return output;
+            return output - 1;
         }
 
+        private static void CompleteTournament(TournamentModel tmt)
+        {
+            GlobalConfig.Connection.CompleteTournament(tmt);
+            TeamModel winner = tmt.Rounds.Last().First().Winner;
+            TeamModel runnerUp = tmt.Rounds.Last().First().Entries.Where(x => x.TeamCompeting != winner).First().TeamCompeting;
+
+            decimal winnerPrize = 0;
+            decimal runnerUpPrize = 0;
+            
+            // Allocate Prizes
+            if (tmt.Prizes.Count > 0)
+            {
+                decimal totalIncome = tmt.EntryFee * tmt.EnteredTeams.Count;
+
+                PrizeModel firstPlacePrize = tmt.Prizes.Where(x => x.PlaceNumber == 1).FirstOrDefault();
+                PrizeModel secondPlacePrize = tmt.Prizes.Where(x => x.PlaceNumber == 2).FirstOrDefault();
+
+                if (firstPlacePrize != null)
+                {
+                    winnerPrize = firstPlacePrize.CalculatePrizeValue(totalIncome);
+                }
+
+                if (secondPlacePrize != null)
+                {
+                    runnerUpPrize = secondPlacePrize.CalculatePrizeValue(totalIncome);
+                }
+            }
+
+            // Email Everyone
+            string subject = "";
+            StringBuilder body = new StringBuilder();
+
+            subject = $"In {tmt.TournamentName}, {winner.TeamName} has won!";
+            body.AppendLine("<h1>WE HAVE A WINNER!</h1>");
+            body.AppendLine("<p>Congratulations to our winner on a great tournament!");
+            body.AppendLine("<br />");
+
+            if (winnerPrize > 0)
+            {
+                body.AppendLine($"<p>{winner.TeamName} will receive ${winnerPrize} for winning the tournament.</p>");
+            }
+
+            if (runnerUpPrize > 0)
+            {
+                body.AppendLine($"<p>{runnerUp.TeamName} will receive ${runnerUpPrize} for coming in second.</p>");
+            }
+
+            body.AppendLine("<p>Thanks for a great tournament, everyone!</p>");
+            body.AppendLine("~Tournament Tracker");
+
+            List<string> bcc = new List<string>();
+            
+            foreach (TeamModel t in tmt.EnteredTeams)
+            {
+                foreach (PersonModel p in t.TeamMembers)
+                {
+                    if (p.EmailAddress.Length > 0)
+                    {
+                        bcc.Add(p.EmailAddress);
+                    }
+                }
+            }
+            EmailLogic.SendEmail(new List<string>(), bcc, subject, body.ToString());
+
+            // Complete Tournament
+            tmt.CompleteTournament();
+        }
+
+        /// <summary>
+        /// Determines the prize value based on the total income of the tournament
+        /// </summary>
+        /// <param name="p">The prize the value is to be determined for.</param>
+        /// <param name="TotalIncome">Total tournament income.</param>
+        /// <returns>The value of the prize</returns>
+        private static decimal CalculatePrizeValue(this PrizeModel p, decimal TotalIncome)
+        {
+            decimal output = 0;
+
+            if (p.PrizeAmount > 0)
+            {
+                output = p.PrizeAmount;
+            }
+            else
+            {
+                output = Decimal.Multiply(TotalIncome, Convert.ToDecimal(p.PrizePercentage / 100));
+            }
+
+            return output; 
+        }
+
+        /// <summary>
+        /// Uses the scores of the Entries to determine and set the winners for 
+        /// each matchup in a round of matchups.
+        /// </summary>
+        /// <param name="matchups"></param>
         private static void MarkMatchupWinners(List<MatchupModel> matchups)
         {
             // 1 (default) or 0
@@ -172,6 +286,12 @@ namespace TrackerLibrary
             }
         }
 
+        /// <summary>
+        /// Take the winners of the matchups in a round and move them to Entries
+        /// in matchups in the next round.
+        /// </summary>
+        /// <param name="matchups">Current round of matchups being scored</param>
+        /// <param name="tmt">The tournament being played.</param>
         private static void AdvanceWinners(List<MatchupModel> matchups, TournamentModel tmt)
         {
             List<MatchupModel> nextRoundMatchups = new List<MatchupModel>();
@@ -180,24 +300,33 @@ namespace TrackerLibrary
             {
                 if (m.MatchupRound < tmt.Rounds.Count)
                 {
-                    nextRoundMatchups = tmt.Rounds[m.MatchupRound];
+                    nextRoundMatchups = tmt.Rounds.Where(x=> x.First().MatchupRound == m.MatchupRound + 1).First();
                 }
 
                 foreach (MatchupModel mm in nextRoundMatchups)
                 {
                     foreach (MatchupEntryModel me in mm.Entries)
                     {
-                        if (me.ParentMatchup == m)
+
+                        if (me.ParentMatchup != null)
                         {
-                            me.TeamCompeting = m.Winner;
-                            GlobalConfig.Connection.UpdateMatchupEntryModel(me);
-                            break;
+                            if (me.ParentMatchup.Id == m.Id)
+                            {
+                                me.TeamCompeting = m.Winner;
+                                GlobalConfig.Connection.UpdateMatchupEntryModel(me);
+                                break;
+                            } 
                         }
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// Create the matchups and entries for all rounds beyond the first
+        /// </summary>
+        /// <param name="rounds">The number of rounds in the tournament</param>
+        /// <param name="tmt">The tournament being played.</param>
         private static void CreateRemainingRounds(int rounds, TournamentModel tmt)
         {
             int round = 2;
@@ -225,6 +354,12 @@ namespace TrackerLibrary
             }
         }
 
+        /// <summary>
+        /// Creates the first round matchups and entries in the tournament
+        /// </summary>
+        /// <param name="byes">The number of byes needed for the first round</param>
+        /// <param name="teams">The entered teams in this tournament.</param>
+        /// <returns></returns>
         private static List<MatchupModel> CreateFirstRound(int byes, List<TeamModel> teams)
         {
             List<MatchupModel> matchups = new List<MatchupModel>();
@@ -249,6 +384,12 @@ namespace TrackerLibrary
             return matchups;
         }
 
+        /// <summary>
+        /// Determine the number of byes required for the first round.
+        /// </summary>
+        /// <param name="teamCount">The number of teams entered in the tournament</param>
+        /// <param name="rounds">The number of rounds in the tournament</param>
+        /// <returns>The number of byes in the first round.</returns>
         private static int FindNumberOfByes(int teamCount, int rounds)
         {
             int roundOneSlots = 1;
@@ -262,6 +403,11 @@ namespace TrackerLibrary
             return roundOneSlots - teamCount;
         }
 
+        /// <summary>
+        /// Determine the number of rounds in the tournament
+        /// </summary>
+        /// <param name="teamCount">The number of teams entered in the tournament</param>
+        /// <returns>The number of rounds in the tournament</returns>
         private static int FindNumberOfRounds(int teamCount)
         {
             int rounds = 1;
@@ -276,6 +422,12 @@ namespace TrackerLibrary
             return rounds;
         }
 
+        /// <summary>
+        /// Randomizes the order of the entered teams so that the matchups and 
+        /// byes are arranged in a fair way
+        /// </summary>
+        /// <param name="teams">The entered teams in the tournament</param>
+        /// <returns>A list of the teams in a random order.</returns>
         private static List<TeamModel> RandomizeTeamOrder(List<TeamModel> teams)
         {
             // Order list of teams randomly

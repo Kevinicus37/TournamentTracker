@@ -304,5 +304,16 @@ namespace TrackerLibrary.DataAccess
                 UpdateMatchupEntryModel(entry);
             }
         }
+
+        public void CompleteTournament(TournamentModel tmt)
+        {
+            using (IDbConnection connection = new System.Data.SqlClient.SqlConnection(GlobalConfig.CnnString(db)))
+            {
+                var p = new DynamicParameters();
+                p.Add("@id", tmt.Id);
+                
+                connection.Execute("dbo.spTournament_Inactive", p, commandType: CommandType.StoredProcedure);
+            }
+        }
     }
 }

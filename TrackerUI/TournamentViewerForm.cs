@@ -24,7 +24,14 @@ namespace TrackerUI
 
             tournament = t;
 
+            tournament.OnTournamentComplete += Tournament_OnTournamentComplete;
+
             LoadFormData();
+        }
+
+        private void Tournament_OnTournamentComplete(object sender, DateTime e)
+        {
+            this.Close();
         }
 
         private void LoadFormData()
@@ -202,15 +209,15 @@ namespace TrackerUI
                 }
             }
 
-            try
-            {
+            //try
+            //{
                 TournamentLogic.UpdateTournamentResults(tournament);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"The application had the following error: {ex.Message}");
-                return;
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show($"The application had the following error: {ex.Message}");
+            //    return;
+            //}
             
             LoadMatchups();
         }

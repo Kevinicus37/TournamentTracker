@@ -133,5 +133,19 @@ namespace TrackerLibrary.DataAccess
         {
             model.UpdateEntryToFile();
         }
+
+        public void CompleteTournament(TournamentModel model)
+        {
+            List<TournamentModel> tournaments = GetTournaments_All();
+            TournamentModel tmt = tournaments.Where(x => x.Id == model.Id).FirstOrDefault();
+
+            if (tmt != null)
+            {
+                tournaments.Remove(tmt);
+
+                tournaments.SaveToTournamentsFile();
+            }
+            
+        }
     }
 }

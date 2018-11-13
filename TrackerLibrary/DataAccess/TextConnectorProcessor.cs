@@ -236,8 +236,10 @@ namespace TrackerLibrary.DataAccess.TextHelpers
                 {
                     currentId = entries.Max(e => e.Id) + 1;
                 }
-            }
 
+                entry.Id = currentId;
+            }
+            
             MatchupEntryModel oldEntry = new MatchupEntryModel();
             foreach (MatchupEntryModel e in entries)
             {
