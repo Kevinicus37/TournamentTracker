@@ -17,7 +17,14 @@ namespace TrackerUI
         private TournamentModel tournament;
         List<int> rounds = new List<int>();
         List<MatchupModel> matchups = new List<MatchupModel>();
-        
+
+        public event EventHandler<DateTime> OnTournamentViewerFormClosed;
+
+        public void ClosedViewer()
+        {
+            OnTournamentViewerFormClosed?.Invoke(this, DateTime.Now);
+        }
+
         public TournamentViewerForm(TournamentModel t)
         {
             InitializeComponent();
@@ -38,7 +45,6 @@ namespace TrackerUI
         {
             tournamentName.Text = tournament.TournamentName;
             LoadRounds();
-            
         }
 
         private void LoadMatchup()
@@ -132,7 +138,6 @@ namespace TrackerUI
             {
                 LoadMatchups();
             }
-            
         }
 
         private void matchupListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -209,17 +214,22 @@ namespace TrackerUI
                 }
             }
 
-            //try
-            //{
+            try
+            {
                 TournamentLogic.UpdateTournamentResults(tournament);
-            //}
-            //catch (Exception ex)
-            //{
-            //    MessageBox.Show($"The application had the following error: {ex.Message}");
-            //    return;
-            //}
-            
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"The application had the following error: {ex.Message}");
+                return;
+            }
+
             LoadMatchups();
+        }
+
+        private void TournamentViewerForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.ClosedViewer();
         }
     }
 }

@@ -222,6 +222,7 @@
             this.Margin = new System.Windows.Forms.Padding(6, 7, 6, 7);
             this.Name = "TournamentViewerForm";
             this.Text = "Tournament Viewer";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.TournamentViewerForm_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 

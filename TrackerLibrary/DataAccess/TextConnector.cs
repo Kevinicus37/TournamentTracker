@@ -145,7 +145,6 @@ namespace TrackerLibrary.DataAccess
 
                 tournaments.SaveToTournamentsFile();
             }
-            
         }
     }
 }

@@ -19,6 +19,13 @@ namespace TrackerUI
         List<TeamModel> selectedTeams = new List<TeamModel>();
         List<PrizeModel> selectedPrizes = new List<PrizeModel>();
 
+        public event EventHandler<DateTime> OnCreateTournamentFormClose;
+
+        public void ClosedForm()
+        {
+            OnCreateTournamentFormClose?.Invoke(this, DateTime.Now);
+        }
+
         public CreateTournamentForm()
         {
             InitializeComponent();
@@ -138,8 +145,14 @@ namespace TrackerUI
             tmt.AlertUsersToNewRound();
 
             TournamentViewerForm frm = new TournamentViewerForm(tmt);
+            
             frm.Show();
             this.Close();
+        }
+
+        private void CreateTournamentForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.ClosedForm();
         }
     }
 }
