@@ -20,11 +20,6 @@ namespace TrackerUI
 
         public event EventHandler<DateTime> OnTournamentViewerFormClosed;
 
-        public void ClosedViewer()
-        {
-            OnTournamentViewerFormClosed?.Invoke(this, DateTime.Now);
-        }
-
         public TournamentViewerForm(TournamentModel t)
         {
             InitializeComponent();
@@ -34,11 +29,6 @@ namespace TrackerUI
             tournament.OnTournamentComplete += Tournament_OnTournamentComplete;
 
             LoadFormData();
-        }
-
-        private void Tournament_OnTournamentComplete(object sender, DateTime e)
-        {
-            this.Close();
         }
 
         private void LoadFormData()
@@ -85,7 +75,6 @@ namespace TrackerUI
 
         private void WireUpLists()
         {
-            
             roundDropDown.DataSource = rounds;
 
             matchupListBox.DataSource = null;
@@ -230,6 +219,16 @@ namespace TrackerUI
         private void TournamentViewerForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.ClosedViewer();
+        }
+
+        private void Tournament_OnTournamentComplete(object sender, DateTime e)
+        {
+            this.Close();
+        }
+
+        public void ClosedViewer()
+        {
+            OnTournamentViewerFormClosed?.Invoke(this, DateTime.Now);
         }
     }
 }
