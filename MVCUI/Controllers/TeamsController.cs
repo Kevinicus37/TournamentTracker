@@ -1,8 +1,11 @@
-﻿using System;
+﻿using MVCUI.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using TrackerLibrary;
+using TrackerLibrary.Models;
 
 namespace MVCUI.Controllers
 {
@@ -11,78 +14,51 @@ namespace MVCUI.Controllers
         // GET: Teams
         public ActionResult Index()
         {
-            return View();
-        }
-
-        // GET: Teams/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
+            List<TeamModel> allTeams = GlobalConfig.Connection.GetTeams_All();
+            return View(allTeams);
         }
 
         // GET: Teams/Create
+       
         public ActionResult Create()
         {
-            return View();
+            List<PersonModel> people = GlobalConfig.Connection.GetPerson_All();
+            TeamMVCModel input = new TeamMVCModel();
+
+            input.TeamMembers = people.Select(x => new SelectListItem { Text = x.FullName, Value = x.Id.ToString() }).ToList();
+
+            return View(input);
         }
 
         // POST: Teams/Create
         [HttpPost]
-        public ActionResult Create(FormCollection collection)
+        [ValidateAntiForgeryToken]
+        public ActionResult Create(TeamMVCModel model)
         {
             try
             {
                 // TODO: Add insert logic here
+                if (ModelState.IsValid && model.SelectedTeamMembers.Count > 0)
+                {
+                    TeamModel t = new TeamModel();
 
-                return RedirectToAction("Index");
+                    t.TeamName = model.TeamName;
+                    t.TeamMembers = model.SelectedTeamMembers.Select(x => new PersonModel { Id = int.Parse(x)}).ToList();
+
+                    GlobalConfig.Connection.CreateTeam(t);
+
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    List<PersonModel> people = GlobalConfig.Connection.GetPerson_All();
+                    model.TeamMembers = people.Select(x => new SelectListItem { Text = x.FullName, Value = x.Id.ToString() }).ToList();
+                    return View(model);
+                }
             }
             catch
             {
-                return View();
-            }
-        }
-
-        // GET: Teams/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
-
-        // POST: Teams/Edit/5
-        [HttpPost]
-        public ActionResult Edit(int id, FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add update logic here
-
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: Teams/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: Teams/Delete/5
-        [HttpPost]
-        public ActionResult Delete(int id, FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add delete logic here
-
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
+                return RedirectToAction("Create");
             }
         }
     }

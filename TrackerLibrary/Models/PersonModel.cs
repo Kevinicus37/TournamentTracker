@@ -36,6 +36,7 @@ namespace TrackerLibrary.Models
         /// </summary>
         [Display(Name = "Email Address")]
         [StringLength(100, MinimumLength = 6)]
+        [EmailAddress]
         [Required]
         public string EmailAddress { get; set; }
 
